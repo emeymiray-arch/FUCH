@@ -1,0 +1,51 @@
+export const Colors = {
+  light: {
+    text: '#0A0A0B',
+    textSecondary: '#6B7280',
+    background: '#F8F9FB',
+    surface: '#FFFFFF',
+    surfaceElevated: '#FFFFFF',
+    border: '#E8EAED',
+    tint: '#1A6B4A',
+    accent: '#1A6B4A',
+    accentLight: '#E8F5EE',
+    tabIconDefault: '#9CA3AF',
+    tabIconSelected: '#1A6B4A',
+    income: '#1A6B4A',
+    expense: '#DC2626',
+    investment: '#2563EB',
+    debt: '#D97706',
+    transfer: '#7C3AED',
+    salary: '#0891B2',
+    cash: '#059669',
+    warning: '#F59E0B',
+    cardShadow: 'rgba(0,0,0,0.06)',
+  },
+  dark: {
+    text: '#F9FAFB',
+    textSecondary: '#9CA3AF',
+    background: '#0A0A0B',
+    surface: '#141416',
+    surfaceElevated: '#1C1C1F',
+    border: '#2A2A2E',
+    tint: '#34D399',
+    accent: '#34D399',
+    accentLight: '#0D2818',
+    tabIconDefault: '#6B7280',
+    tabIconSelected: '#34D399',
+    income: '#34D399',
+    expense: '#F87171',
+    investment: '#60A5FA',
+    debt: '#FBBF24',
+    transfer: '#A78BFA',
+    salary: '#22D3EE',
+    cash: '#34D399',
+    warning: '#FBBF24',
+    cardShadow: 'rgba(0,0,0,0.3)',
+  },
+} as const;
+
+export type ColorScheme = keyof typeof Colors;
+export type ThemeColors = (typeof Colors)[ColorScheme];
+
+export default Colors;
