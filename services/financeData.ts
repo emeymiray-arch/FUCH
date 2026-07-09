@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Account, BankProvider, Category, FinanceSummary, Transaction } from '@/types';
 import { DEFAULT_CATEGORIES } from '@/constants/Categories';
 
-const CACHE_KEYS = {
+const LEGACY_KEYS = {
   transactions: '@finotchet/transactions',
   accounts: '@finotchet/accounts',
   categories: '@finotchet/categories',
@@ -10,6 +10,51 @@ const CACHE_KEYS = {
   lastSync: '@finotchet/lastSync',
   initialized: '@finotchet/initialized_v2',
 } as const;
+
+let activeUserId: string | null = null;
+
+export function setFinanceUserId(userId: string | null): void {
+  activeUserId = userId;
+}
+
+export function getFinanceUserId(): string | null {
+  return activeUserId;
+}
+
+function getCacheKeys(userId?: string | null) {
+  const uid = userId ?? activeUserId ?? 'guest';
+  return {
+    transactions: `@finotchet/${uid}/transactions`,
+    accounts: `@finotchet/${uid}/accounts`,
+    categories: `@finotchet/${uid}/categories`,
+    connectedBanks: `@finotchet/${uid}/connectedBanks`,
+    lastSync: `@finotchet/${uid}/lastSync`,
+    initialized: `@finotchet/${uid}/initialized`,
+  } as const;
+}
+
+export async function migrateLegacyFinanceData(userId: string): Promise<void> {
+  const newKeys = getCacheKeys(userId);
+  const already = await AsyncStorage.getItem(newKeys.initialized);
+  if (already) return;
+
+  const legacyInit = await AsyncStorage.getItem(LEGACY_KEYS.initialized);
+  if (!legacyInit) return;
+
+  const pairs: [string, string][] = [
+    [LEGACY_KEYS.transactions, newKeys.transactions],
+    [LEGACY_KEYS.accounts, newKeys.accounts],
+    [LEGACY_KEYS.categories, newKeys.categories],
+    [LEGACY_KEYS.connectedBanks, newKeys.connectedBanks],
+    [LEGACY_KEYS.lastSync, newKeys.lastSync],
+  ];
+
+  for (const [from, to] of pairs) {
+    const val = await AsyncStorage.getItem(from);
+    if (val) await AsyncStorage.setItem(to, val);
+  }
+  await AsyncStorage.setItem(newKeys.initialized, 'true');
+}
 
 export const BANK_ACCOUNTS: Record<BankProvider, Account> = {
   tinkoff: {
@@ -84,28 +129,31 @@ export function computeSummary(transactions: Transaction[], accounts: Account[])
 }
 
 export async function loadConnectedBanks(): Promise<BankProvider[]> {
-  const raw = await AsyncStorage.getItem(CACHE_KEYS.connectedBanks);
+  const keys = getCacheKeys();
+  const raw = await AsyncStorage.getItem(keys.connectedBanks);
   return raw ? (JSON.parse(raw) as BankProvider[]) : [];
 }
 
 export async function saveConnectedBanks(banks: BankProvider[]) {
-  await AsyncStorage.setItem(CACHE_KEYS.connectedBanks, JSON.stringify(banks));
+  const keys = getCacheKeys();
+  await AsyncStorage.setItem(keys.connectedBanks, JSON.stringify(banks));
 }
 
 export async function loadCachedData() {
   try {
+    const keys = getCacheKeys();
     const connectedBanks = await loadConnectedBanks();
     const [txRaw, accRaw, catRaw, initFlag] = await Promise.all([
-      AsyncStorage.getItem(CACHE_KEYS.transactions),
-      AsyncStorage.getItem(CACHE_KEYS.accounts),
-      AsyncStorage.getItem(CACHE_KEYS.categories),
-      AsyncStorage.getItem(CACHE_KEYS.initialized),
+      AsyncStorage.getItem(keys.transactions),
+      AsyncStorage.getItem(keys.accounts),
+      AsyncStorage.getItem(keys.categories),
+      AsyncStorage.getItem(keys.initialized),
     ]);
 
     if (!initFlag) {
       const empty = getEmptyState(connectedBanks);
       await cacheData(empty);
-      await AsyncStorage.setItem(CACHE_KEYS.initialized, 'true');
+      await AsyncStorage.setItem(keys.initialized, 'true');
       return empty;
     }
 
@@ -144,35 +192,39 @@ export async function cacheData(data: {
   accounts?: Account[];
   categories?: Category[];
 }) {
+  const keys = getCacheKeys();
   const ops: Promise<void>[] = [];
   if (data.transactions !== undefined) {
-    ops.push(AsyncStorage.setItem(CACHE_KEYS.transactions, JSON.stringify(data.transactions)));
+    ops.push(AsyncStorage.setItem(keys.transactions, JSON.stringify(data.transactions)));
   }
   if (data.accounts !== undefined) {
-    ops.push(AsyncStorage.setItem(CACHE_KEYS.accounts, JSON.stringify(data.accounts)));
+    ops.push(AsyncStorage.setItem(keys.accounts, JSON.stringify(data.accounts)));
   }
   if (data.categories !== undefined) {
-    ops.push(AsyncStorage.setItem(CACHE_KEYS.categories, JSON.stringify(data.categories)));
+    ops.push(AsyncStorage.setItem(keys.categories, JSON.stringify(data.categories)));
   }
   await Promise.all(ops);
-  await AsyncStorage.setItem(CACHE_KEYS.lastSync, new Date().toISOString());
+  await AsyncStorage.setItem(keys.lastSync, new Date().toISOString());
 }
 
 export async function clearAllFinanceData() {
+  const keys = getCacheKeys();
   await Promise.all([
-    AsyncStorage.removeItem(CACHE_KEYS.transactions),
-    AsyncStorage.removeItem(CACHE_KEYS.accounts),
-    AsyncStorage.removeItem(CACHE_KEYS.categories),
-    AsyncStorage.removeItem(CACHE_KEYS.connectedBanks),
-    AsyncStorage.removeItem(CACHE_KEYS.lastSync),
-    AsyncStorage.removeItem(CACHE_KEYS.initialized),
+    AsyncStorage.removeItem(keys.transactions),
+    AsyncStorage.removeItem(keys.accounts),
+    AsyncStorage.removeItem(keys.categories),
+    AsyncStorage.removeItem(keys.connectedBanks),
+    AsyncStorage.removeItem(keys.lastSync),
+    AsyncStorage.removeItem(keys.initialized),
   ]);
 }
 
 export async function markInitialized() {
-  await AsyncStorage.setItem(CACHE_KEYS.initialized, 'true');
+  const keys = getCacheKeys();
+  await AsyncStorage.setItem(keys.initialized, 'true');
 }
 
 export async function getLastSyncTime(): Promise<string | null> {
-  return AsyncStorage.getItem(CACHE_KEYS.lastSync);
+  const keys = getCacheKeys();
+  return AsyncStorage.getItem(keys.lastSync);
 }

@@ -2,74 +2,55 @@ import { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   Alert,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui';
 import { PinInput, PIN_LEN } from '@/components/PinInput';
 import { useAuthStore } from '@/store/authStore';
-import { MANAGER_NAME } from '@/services/authService';
 
 export default function LoginScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { hasPassword, setupPassword, loginWithPin, loginWithBiometric, biometricEnabled } =
+  const { loginWithEmailPin, loginWithBiometric, biometricEnabled, hasUsers, isLoading } =
     useAuthStore();
+  const [email, setEmail] = useState('');
   const [pin, setPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
-  const [step, setStep] = useState<'enter' | 'confirm'>('enter');
   const [loading, setLoading] = useState(false);
 
-  const isSetup = !hasPassword;
+  useEffect(() => {
+    if (!isLoading && !hasUsers) {
+      router.replace('/(auth)/register' as never);
+    }
+  }, [hasUsers, isLoading, router]);
 
   useEffect(() => {
-    if (!isSetup && pin.length === PIN_LEN) {
+    if (email.trim() && pin.length === PIN_LEN) {
       handleLogin(pin);
     }
-  }, [pin, isSetup]);
+  }, [pin]);
 
-  const handleSetup = async () => {
-    if (pin.length !== PIN_LEN) {
-      Alert.alert('Пароль', 'Введите 5 цифр');
+  const handleLogin = async (code?: string) => {
+    const pinCode = code ?? pin;
+    if (!email.trim()) {
+      Alert.alert('Вход', 'Введите email');
       return;
     }
-    if (step === 'enter') {
-      setStep('confirm');
-      return;
-    }
-    if (pin !== confirmPin) {
-      Alert.alert('Пароль', 'Пароли не совпадают');
-      setConfirmPin('');
-      return;
-    }
+    if (pinCode.length !== PIN_LEN) return;
+
     setLoading(true);
     try {
-      await setupPassword(pin);
+      await loginWithEmailPin(email, pinCode);
       router.replace('/(tabs)');
     } catch (e) {
-      Alert.alert('Ошибка', e instanceof Error ? e.message : 'Не удалось сохранить пароль');
-      setPin('');
-      setConfirmPin('');
-      setStep('enter');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogin = async (code: string) => {
-    if (code.length !== PIN_LEN) return;
-    setLoading(true);
-    try {
-      await loginWithPin(code);
-      router.replace('/(tabs)');
-    } catch (e) {
-      Alert.alert('Ошибка', e instanceof Error ? e.message : 'Неверный пароль');
+      Alert.alert('Ошибка', e instanceof Error ? e.message : 'Не удалось войти');
       setPin('');
     } finally {
       setLoading(false);
@@ -89,56 +70,59 @@ export default function LoginScreen() {
         style={styles.inner}
       >
         <View style={styles.header}>
-          <Text style={[styles.welcome, { color: colors.textSecondary }]}>Добро пожаловать</Text>
-          <Text style={[styles.name, { color: colors.text }]}>{MANAGER_NAME}</Text>
+          <Text style={[styles.logo, { color: colors.text }]}>ФинОтчёт</Text>
           <Text style={{ color: colors.textSecondary, fontSize: 15, marginTop: 8 }}>
-            {isSetup
-              ? 'Настройте 5-значный пароль для входа'
-              : 'Введите пароль для входа'}
+            Войдите в свой аккаунт
           </Text>
         </View>
 
-        {isSetup ? (
-          <View style={styles.form}>
-            {step === 'enter' ? (
-              <PinInput value={pin} onChange={setPin} label="Придумайте пароль" />
-            ) : (
-              <PinInput value={confirmPin} onChange={setConfirmPin} label="Повторите пароль" />
-            )}
-            <View style={{ marginTop: 32 }}>
-              <Button
-                title={step === 'enter' ? 'Далее' : 'Сохранить пароль'}
-                onPress={handleSetup}
-                loading={loading}
-                disabled={step === 'enter' ? pin.length !== PIN_LEN : confirmPin.length !== PIN_LEN}
-              />
-            </View>
-            {step === 'confirm' && (
-              <Pressable
-                onPress={() => { setStep('enter'); setConfirmPin(''); }}
-                style={styles.backBtn}
-              >
-                <Text style={{ color: colors.accent }}>Назад</Text>
-              </Pressable>
-            )}
+        <View style={styles.form}>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Email</Text>
+          <TextInput
+            style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+            placeholder="you@company.com"
+            placeholderTextColor={colors.textSecondary}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoComplete="email"
+          />
+
+          <PinInput value={pin} onChange={setPin} label="Пароль (5 цифр)" />
+
+          {loading && (
+            <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 12 }}>
+              Проверка...
+            </Text>
+          )}
+
+          <View style={{ marginTop: 24, width: '100%' }}>
+            <Button
+              title="Войти"
+              onPress={() => handleLogin()}
+              loading={loading}
+              disabled={pin.length !== PIN_LEN || !email.trim()}
+            />
           </View>
-        ) : (
-          <View style={styles.form}>
-            <PinInput value={pin} onChange={setPin} label="Пароль" />
-            {loading && (
-              <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 16 }}>
-                Проверка...
+
+          {biometricEnabled && (
+            <Pressable onPress={handleBiometric} style={styles.bioBtn}>
+              <Text style={{ color: colors.accent, fontSize: 15, fontWeight: '500' }}>
+                Войти с Face ID
               </Text>
-            )}
-            {biometricEnabled && (
-              <Pressable onPress={handleBiometric} style={styles.bioBtn}>
-                <Text style={{ color: colors.accent, fontSize: 15, fontWeight: '500' }}>
-                  Войти с Face ID
-                </Text>
-              </Pressable>
-            )}
-          </View>
-        )}
+            </Pressable>
+          )}
+
+          <Link href={'/(auth)/register' as never} asChild>
+            <Pressable style={styles.linkBtn}>
+              <Text style={{ color: colors.textSecondary }}>
+                Нет аккаунта?{' '}
+                <Text style={{ color: colors.accent, fontWeight: '600' }}>Зарегистрироваться</Text>
+              </Text>
+            </Pressable>
+          </Link>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -147,10 +131,17 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flex: 1, padding: 24, justifyContent: 'center' },
-  header: { marginBottom: 48, alignItems: 'center' },
-  welcome: { fontSize: 16, marginBottom: 4 },
-  name: { fontSize: 32, fontWeight: '800', textAlign: 'center' },
-  form: { alignItems: 'center' },
-  backBtn: { alignItems: 'center', marginTop: 16, padding: 12 },
-  bioBtn: { alignItems: 'center', marginTop: 24, padding: 12 },
+  header: { marginBottom: 36, alignItems: 'center' },
+  logo: { fontSize: 32, fontWeight: '800' },
+  form: { width: '100%', alignItems: 'stretch' },
+  label: { fontSize: 13, fontWeight: '500', marginBottom: 8 },
+  input: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  bioBtn: { alignItems: 'center', marginTop: 20, padding: 12 },
+  linkBtn: { alignItems: 'center', marginTop: 24, padding: 12 },
 });

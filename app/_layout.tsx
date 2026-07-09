@@ -65,6 +65,7 @@ export default function RootLayout() {
         <Stack.Screen name="add-transaction" options={{ headerShown: true, title: 'Новая операция' }} />
         <Stack.Screen name="bank-setup" options={{ headerShown: true, title: 'Сервер' }} />
         <Stack.Screen name="auto-import" options={{ headerShown: true, title: 'Siri и буфер' }} />
+        <Stack.Screen name="cloud-setup" options={{ headerShown: true, title: 'Облако' }} />
         <Stack.Screen name="siri-setup" options={{ headerShown: true, title: 'Siri' }} />
         <Stack.Screen name="notification-setup" options={{ headerShown: true, title: 'Уведомления' }} />
         <Stack.Screen name="transaction/[id]" options={{ headerShown: true, title: 'Операция' }} />

@@ -6,7 +6,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { Card } from '@/components/ui';
 import { useAuthStore } from '@/store/authStore';
 import { useFinanceStore } from '@/store/financeStore';
-import { MANAGER_NAME } from '@/services/authService';
+import { isCloudAuthEnabled } from '@/services/authService';
 import {
   isAutoNotificationEnabled,
   setAutoNotificationEnabled,
@@ -17,7 +17,7 @@ import {
 export default function SettingsScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { biometricEnabled, toggleBiometric, logout } = useAuthStore();
+  const { biometricEnabled, toggleBiometric, logout, user } = useAuthStore();
   const resetFinance = useFinanceStore((s) => s.resetAllData);
   const loadDemoData = useFinanceStore((s) => s.loadDemoData);
   const [autoNotification, setAutoNotification] = useState(true);
@@ -89,11 +89,13 @@ export default function SettingsScreen() {
       <View style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}>
         <Card style={styles.profile}>
           <View style={[styles.avatar, { backgroundColor: colors.accentLight }]}>
-            <Text style={{ color: colors.accent, fontSize: 24, fontWeight: '700' }}>М</Text>
+            <Text style={{ color: colors.accent, fontSize: 24, fontWeight: '700' }}>
+              {(user?.name ?? '?').charAt(0).toUpperCase()}
+            </Text>
           </View>
           <View>
-            <Text style={{ color: colors.text, fontSize: 17, fontWeight: '600' }}>{MANAGER_NAME}</Text>
-            <Text style={{ color: colors.textSecondary, fontSize: 14 }}>Руководитель</Text>
+            <Text style={{ color: colors.text, fontSize: 17, fontWeight: '600' }}>{user?.name ?? 'Пользователь'}</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 14 }}>{user?.email}</Text>
           </View>
         </Card>
 
@@ -129,6 +131,29 @@ export default function SettingsScreen() {
             </View>
             <Ionicons name="checkmark" size={20} color={colors.income} />
           </View>
+        </Card>
+
+        <Text style={[styles.section, { color: colors.textSecondary }]}>Облако</Text>
+        <Card>
+          <Pressable
+            onPress={() => router.push('/cloud-setup' as never)}
+            style={styles.row}
+          >
+            <Ionicons
+              name={isCloudAuthEnabled() ? 'cloud-done-outline' : 'cloud-outline'}
+              size={22}
+              color={colors.accent}
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.text, fontSize: 15 }}>Supabase</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                {isCloudAuthEnabled()
+                  ? 'Синхронизация между устройствами включена'
+                  : 'Настроить облачные аккаунты'}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </Pressable>
         </Card>
 
         <Text style={[styles.section, { color: colors.textSecondary }]}>Siri и буфер</Text>

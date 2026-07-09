@@ -13,7 +13,6 @@ import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui';
 import { PinInput, PIN_LEN } from '@/components/PinInput';
 import { useAuthStore } from '@/store/authStore';
-import { MANAGER_NAME } from '@/services/authService';
 
 type Step = 'current' | 'new' | 'confirm';
 
@@ -21,6 +20,7 @@ export default function ChangePasswordScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const changePassword = useAuthStore((s) => s.changePassword);
+  const user = useAuthStore((s) => s.user);
   const [step, setStep] = useState<Step>('current');
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
@@ -81,7 +81,7 @@ export default function ChangePasswordScreen() {
           style={styles.inner}
         >
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {MANAGER_NAME}
+            {user?.name ?? 'Аккаунт'}
           </Text>
           <PinInput value={pinValue} onChange={setPinValue} label={labels[step]} />
           <View style={{ marginTop: 32, width: '100%' }}>

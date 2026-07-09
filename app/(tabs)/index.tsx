@@ -8,14 +8,13 @@ import { SectionHeader, Card } from '@/components/ui';
 import { TransactionItem } from '@/components/TransactionItem';
 import { useFinanceStore } from '@/store/financeStore';
 import { useAuthStore } from '@/store/authStore';
-import { MANAGER_NAME } from '@/services/authService';
 
 export default function HomeScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { summary, transactions, accounts, isSyncing, initialize, syncInBackground, loadDemoData } =
     useFinanceStore();
-  const checkSession = useAuthStore((s) => s.checkSession);
+  const { user, checkSession } = useAuthStore();
 
   useEffect(() => {
     initialize();
@@ -43,7 +42,7 @@ export default function HomeScreen() {
         <View>
           <Text style={{ color: colors.textSecondary, fontSize: 14 }}>Добро пожаловать</Text>
           <Text style={{ color: colors.text, fontSize: 20, fontWeight: '700', marginTop: 2 }}>
-            {MANAGER_NAME}
+            {user?.name ?? 'Пользователь'}
           </Text>
           {isSyncing && (
             <Text style={{ color: colors.accent, fontSize: 12, marginTop: 2 }}>

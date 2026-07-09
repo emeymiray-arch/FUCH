@@ -15,10 +15,13 @@ import {
   clearAllFinanceData,
   computeSummary,
   getEmptyState,
+  getFinanceUserId,
   loadCachedData,
   markInitialized,
   saveConnectedBanks,
+  getLastSyncTime,
 } from '@/services/financeData';
+import { pullFinanceFromCloud, pushFinanceToCloud, isCloudSyncAvailable } from '@/services/cloudFinance';
 import { syncAllBanks } from '@/services/bankSyncService';
 import { applyTransactionToAccounts, buildTransaction } from '@/services/transactionService';
 import { parseVoiceCommand } from '@/services/voiceCommandService';
@@ -57,6 +60,7 @@ interface FinanceState {
   getFilteredTransactions: () => Transaction[];
   getCategoryById: (id: string) => Category | undefined;
   persist: () => Promise<void>;
+  clearSession: () => void;
 }
 
 function migrateTx(t: Transaction): Transaction {
@@ -72,15 +76,29 @@ function recalc(transactions: Transaction[], accounts: Account[]): FinanceSummar
   return computeSummary(transactions, accounts);
 }
 
-function persistState(state: Pick<FinanceState, 'transactions' | 'accounts' | 'categories'>) {
-  return cacheData({
-    transactions: state.transactions,
-    accounts: state.accounts,
-    categories: state.categories,
-  });
-}
+export const useFinanceStore = create<FinanceState>((set, get) => {
+  function persistState(state: Pick<FinanceState, 'transactions' | 'accounts' | 'categories'>) {
+    const connectedBanks = get().connectedBanks;
+    const userId = getFinanceUserId();
+    const promise = cacheData({
+      transactions: state.transactions,
+      accounts: state.accounts,
+      categories: state.categories,
+    });
 
-export const useFinanceStore = create<FinanceState>((set, get) => ({
+    if (isCloudSyncAvailable() && userId) {
+      pushFinanceToCloud(userId, {
+        transactions: state.transactions,
+        accounts: state.accounts,
+        categories: state.categories,
+        connectedBanks,
+      }).catch(() => {});
+    }
+
+    return promise;
+  }
+
+  return {
   transactions: [],
   accounts: [],
   categories: [],
@@ -101,7 +119,38 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
 
   initialize: async () => {
     set({ isLoading: true });
-    const data = await loadCachedData();
+    let data = await loadCachedData();
+    const userId = getFinanceUserId();
+
+    if (isCloudSyncAvailable() && userId) {
+      try {
+        const cloud = await pullFinanceFromCloud(userId);
+        const localSync = await getLastSyncTime();
+        const localTs = localSync ? new Date(localSync).getTime() : 0;
+        const cloudTs = cloud ? new Date(cloud.updatedAt).getTime() : 0;
+
+        if (cloud && cloudTs >= localTs) {
+          data = {
+            transactions: cloud.data.transactions,
+            accounts: cloud.data.accounts,
+            categories: cloud.data.categories,
+            connectedBanks: cloud.data.connectedBanks,
+          };
+          await cacheData(data);
+          await saveConnectedBanks(data.connectedBanks);
+        } else if (data.transactions.length > 0 || data.accounts.some((a) => a.balance !== 0)) {
+          await pushFinanceToCloud(userId, {
+            transactions: data.transactions,
+            accounts: data.accounts,
+            categories: data.categories,
+            connectedBanks: data.connectedBanks,
+          });
+        }
+      } catch {
+        // офлайн — используем локальные данные
+      }
+    }
+
     const transactions = data.transactions.map(migrateTx);
     const summary = recalc(transactions, data.accounts);
     set({
@@ -348,4 +397,21 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   },
 
   getCategoryById: (id) => get().categories.find((c) => c.id === id),
-}));
+
+  clearSession: () => {
+    const empty = getEmptyState();
+    set({
+      transactions: [],
+      accounts: empty.accounts,
+      categories: empty.categories,
+      connectedBanks: [],
+      summary: recalc([], empty.accounts),
+      isLoading: false,
+      isSyncing: false,
+      searchQuery: '',
+      filterType: 'all',
+      sortOption: 'date_desc',
+    });
+  },
+  };
+});

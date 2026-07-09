@@ -1,16 +1,17 @@
 import { create } from 'zustand';
 import { User } from '@/types';
 import * as authService from '@/services/authService';
+import { useFinanceStore } from '@/store/financeStore';
 
 interface AuthState {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  hasPassword: boolean;
+  hasUsers: boolean;
   biometricEnabled: boolean;
   initialize: () => Promise<void>;
-  setupPassword: (pin: string) => Promise<void>;
-  loginWithPin: (pin: string) => Promise<void>;
+  register: (name: string, email: string, pin: string) => Promise<void>;
+  loginWithEmailPin: (email: string, pin: string) => Promise<void>;
   changePassword: (currentPin: string, newPin: string) => Promise<void>;
   logout: () => Promise<void>;
   loginWithBiometric: () => Promise<boolean>;
@@ -22,32 +23,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoading: true,
   isAuthenticated: false,
-  hasPassword: false,
+  hasUsers: false,
   biometricEnabled: false,
 
   initialize: async () => {
     set({ isLoading: true });
-    const [user, biometric, hasPassword] = await Promise.all([
+    await authService.migrateLegacyAuth();
+    const [user, biometric, hasUsers] = await Promise.all([
       authService.getStoredUser(),
       authService.isBiometricEnabled(),
-      authService.hasPassword(),
+      authService.hasRegisteredUsers(),
     ]);
     set({
       user: user ?? null,
       isAuthenticated: !!user,
-      hasPassword,
+      hasUsers,
       biometricEnabled: biometric,
       isLoading: false,
     });
   },
 
-  setupPassword: async (pin) => {
-    const user = await authService.setupPassword(pin);
-    set({ user, isAuthenticated: true, hasPassword: true });
+  register: async (name, email, pin) => {
+    const user = await authService.register(name, email, pin);
+    await useFinanceStore.getState().initialize();
+    set({ user, isAuthenticated: true, hasUsers: true });
   },
 
-  loginWithPin: async (pin) => {
-    const user = await authService.loginWithPin(pin);
+  loginWithEmailPin: async (email, pin) => {
+    const user = await authService.loginWithEmailPin(email, pin);
+    await useFinanceStore.getState().initialize();
     set({ user, isAuthenticated: true });
   },
 
@@ -57,12 +61,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     await authService.logout();
-    set({ user: null, isAuthenticated: false });
+    useFinanceStore.getState().clearSession();
+    set({ user: null, isAuthenticated: false, biometricEnabled: false });
   },
 
   loginWithBiometric: async () => {
     const user = await authService.loginWithBiometric();
     if (user) {
+      await useFinanceStore.getState().initialize();
       set({ user, isAuthenticated: true });
       return true;
     }
