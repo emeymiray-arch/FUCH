@@ -2,6 +2,14 @@
   "buildCommand": "npm run build:web",
   "outputDirectory": "dist",
   "installCommand": "npm install",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/((?!_expo|assets|favicon.ico|version.json).*)",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/version.json",
