@@ -19,7 +19,6 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { biometricEnabled, toggleBiometric, logout, user } = useAuthStore();
   const resetFinance = useFinanceStore((s) => s.resetAllData);
-  const loadDemoData = useFinanceStore((s) => s.loadDemoData);
   const [autoNotification, setAutoNotification] = useState(true);
   const [autoConfirm, setAutoConfirm] = useState(false);
 
@@ -27,23 +26,6 @@ export default function SettingsScreen() {
     isAutoNotificationEnabled().then(setAutoNotification);
     isClipboardAutoConfirmEnabled().then(setAutoConfirm);
   }, []);
-
-  const handleLoadDemo = () => {
-    Alert.alert(
-      'Загрузить демо-данные?',
-      'Подставятся примерные операции, балансы и подключённые банки. Текущие данные будут заменены.',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        {
-          text: 'Загрузить',
-          onPress: async () => {
-            await loadDemoData();
-            Alert.alert('Готово', 'Демо-данные загружены');
-          },
-        },
-      ]
-    );
-  };
 
   const handleReset = () => {
     Alert.alert(
@@ -211,6 +193,23 @@ export default function SettingsScreen() {
           </View>
         </Card>
 
+        <Text style={[styles.section, { color: colors.textSecondary }]}>Интеграции</Text>
+        <Card>
+          <Pressable
+            onPress={() => router.push('/bitrix-setup' as never)}
+            style={styles.row}
+          >
+            <Ionicons name="business-outline" size={22} color={colors.accent} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: colors.text, fontSize: 15 }}>Битрикс24</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                CRM, сделки, webhook
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </Pressable>
+        </Card>
+
         <Text style={[styles.section, { color: colors.textSecondary }]}>Данные</Text>
         <Card>
           <Pressable onPress={() => router.push('/categories')} style={styles.row}>
@@ -225,18 +224,6 @@ export default function SettingsScreen() {
             <Ionicons name="card-outline" size={22} color={colors.accent} />
             <Text style={{ color: colors.text, flex: 1, fontSize: 15 }}>Банковские счета</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-          </Pressable>
-          <Pressable
-            onPress={handleLoadDemo}
-            style={[styles.row, { borderTopWidth: 1, borderTopColor: colors.border }]}
-          >
-            <Ionicons name="flask-outline" size={22} color={colors.accent} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.text, fontSize: 15 }}>Загрузить демо-данные</Text>
-              <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                Примеры операций и балансов
-              </Text>
-            </View>
           </Pressable>
           <Pressable
             onPress={handleReset}

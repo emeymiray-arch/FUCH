@@ -4,7 +4,6 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/components/useColorScheme';
 import { Colors } from '@/constants/Colors';
 import { useAuthStore } from '@/store/authStore';
-import { useFinanceStore } from '@/store/financeStore';
 import { useDeepLinks } from '@/hooks/useDeepLinks';
 import { useNotificationClipboard } from '@/hooks/useNotificationClipboard';
 import { useAppUpdate } from '@/hooks/useAppUpdate';
@@ -19,8 +18,9 @@ function useProtectedRoute(isAuthenticated: boolean, isLoading: boolean) {
   useEffect(() => {
     if (isLoading) return;
     const inAuth = segments[0] === '(auth)';
+    const inAuthCallback = segments[0] === 'auth';
 
-    if (!isAuthenticated && !inAuth) {
+    if (!isAuthenticated && !inAuth && !inAuthCallback) {
       router.replace('/(auth)/login');
     } else if (isAuthenticated && inAuth) {
       router.replace('/(tabs)');
@@ -31,13 +31,11 @@ function useProtectedRoute(isAuthenticated: boolean, isLoading: boolean) {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const segments = useSegments();
-  const isAuthFlow = segments[0] === '(auth)';
+  const isAuthFlow = segments[0] === '(auth)' || segments[0] === 'auth';
   const { isAuthenticated, isLoading, initialize: initAuth, user } = useAuthStore();
-  const initFinance = useFinanceStore((s) => s.initialize);
 
   useEffect(() => {
     initAuth();
-    initFinance();
   }, []);
 
   useProtectedRoute(isAuthenticated, isLoading);
@@ -71,7 +69,9 @@ export default function RootLayout() {
         <Stack.Screen name="add-transaction" options={{ headerShown: true, title: 'Новая операция' }} />
         <Stack.Screen name="bank-setup" options={{ headerShown: true, title: 'Сервер' }} />
         <Stack.Screen name="auto-import" options={{ headerShown: true, title: 'Siri и буфер' }} />
+        <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
         <Stack.Screen name="cloud-setup" options={{ headerShown: true, title: 'Облако' }} />
+        <Stack.Screen name="bitrix-setup" options={{ headerShown: true, title: 'Битрикс24' }} />
         <Stack.Screen name="siri-setup" options={{ headerShown: true, title: 'Siri' }} />
         <Stack.Screen name="notification-setup" options={{ headerShown: true, title: 'Уведомления' }} />
         <Stack.Screen name="transaction/[id]" options={{ headerShown: true, title: 'Операция' }} />

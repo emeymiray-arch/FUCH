@@ -16,6 +16,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { Button } from '@/components/ui';
 import { PinInput, PIN_LEN } from '@/components/PinInput';
 import { useAuthStore } from '@/store/authStore';
+import { isCloudAuthEnabled } from '@/services/authService';
 
 type Step = 'info' | 'pin' | 'confirm';
 
@@ -63,7 +64,14 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     setLoading(true);
     try {
-      await register(name.trim(), email.trim(), pin);
+      const { needsEmailVerification } = await register(name.trim(), email.trim().toLowerCase(), pin);
+      if (needsEmailVerification) {
+        router.replace({
+          pathname: '/(auth)/verify-email',
+          params: { email: email.trim().toLowerCase() },
+        });
+        return;
+      }
       router.replace('/(tabs)');
     } catch (e) {
       Alert.alert('Ошибка', e instanceof Error ? e.message : 'Не удалось зарегистрироваться');
@@ -77,15 +85,14 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
             <Text style={[styles.logo, { color: colors.text }]}>Регистрация</Text>
             <Text style={{ color: colors.textSecondary, fontSize: 15, marginTop: 8, textAlign: 'center' }}>
-              Создайте аккаунт — у каждого пользователя свои финансы
+              {isCloudAuthEnabled()
+                ? 'Облачный аккаунт — данные синхронизируются между устройствами'
+                : 'Локальный аккаунт на этом устройстве'}
             </Text>
           </View>
 
@@ -94,7 +101,7 @@ export default function RegisterScreen() {
               <Text style={[styles.label, { color: colors.textSecondary }]}>Имя</Text>
               <TextInput
                 style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                placeholder="Мохьмад Эми"
+                placeholder="Ваше имя"
                 placeholderTextColor={colors.textSecondary}
                 value={name}
                 onChangeText={setName}
@@ -134,11 +141,7 @@ export default function RegisterScreen() {
               onPress={handleNext}
               loading={loading}
               disabled={
-                step === 'pin'
-                  ? pin.length !== PIN_LEN
-                  : step === 'confirm'
-                    ? confirmPin.length !== PIN_LEN
-                    : false
+                step === 'pin' ? pin.length !== PIN_LEN : step === 'confirm' ? confirmPin.length !== PIN_LEN : false
               }
             />
           </View>
@@ -158,8 +161,7 @@ export default function RegisterScreen() {
           <Link href={'/(auth)/login' as never} asChild>
             <Pressable style={styles.linkBtn}>
               <Text style={{ color: colors.textSecondary }}>
-                Уже есть аккаунт?{' '}
-                <Text style={{ color: colors.accent, fontWeight: '600' }}>Войти</Text>
+                Уже есть аккаунт? <Text style={{ color: colors.accent, fontWeight: '600' }}>Войти</Text>
               </Text>
             </Pressable>
           </Link>

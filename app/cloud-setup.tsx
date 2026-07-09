@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
 import { Card } from '@/components/ui';
 import { isCloudAuthEnabled } from '@/services/authService';
+import { getAppUrl, getAuthCallbackUrl } from '@/lib/config';
 
 export default function CloudSetupScreen() {
   const { colors } = useTheme();
@@ -30,20 +31,18 @@ export default function CloudSetupScreen() {
           </Text>
           <Text style={{ color: colors.textSecondary, lineHeight: 22, marginTop: 8 }}>
             {configured
-              ? 'Синхронизация между устройствами включена.'
-              : 'Создайте отдельный проект Supabase для FUCH (не LIFE Dashboard).'}
+              ? 'Аккаунты и финансы синхронизируются между устройствами.'
+              : 'Добавьте ключи Supabase в .env и Vercel.'}
           </Text>
         </Card>
 
-        <Text style={[styles.section, { color: colors.text }]}>Настройка (один раз)</Text>
+        <Text style={[styles.section, { color: colors.text }]}>Supabase Dashboard</Text>
         {[
-          'Зайдите на supabase.com → New Project',
-          'SQL Editor → вставьте код из supabase/schema.sql → Run',
-          'Settings → API → скопируйте Project URL и anon public key',
-          'В папке проекта: скопируйте .env.example → .env',
-          'Вставьте URL и ключ в .env',
-          'Перезапустите: npm run start -- --web',
-          'Authentication → Providers → Email → отключите Confirm email',
+          'Authentication → URL Configuration',
+          `Site URL: ${getAppUrl()}`,
+          `Redirect URLs: ${getAuthCallbackUrl()}`,
+          'Authentication → Email → включите Confirm email (если нужно)',
+          'SQL Editor → выполните supabase/schema.sql',
         ].map((step, i) => (
           <View key={i} style={styles.stepRow}>
             <View style={[styles.num, { backgroundColor: colors.accentLight }]}>
@@ -54,13 +53,10 @@ export default function CloudSetupScreen() {
         ))}
 
         <Card style={{ marginTop: 16 }}>
-          <Text style={{ color: configured ? colors.income : colors.textSecondary, fontWeight: '600' }}>
-            {configured ? 'Ключи в .env найдены' : 'Добавьте .env в корне проекта'}
-          </Text>
+          <Text style={{ color: colors.text, fontWeight: '600' }}>Важно про письма</Text>
           <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20, marginTop: 8 }}>
-            {configured
-              ? 'Перезапустите Expo после изменения .env.\nКоманды: npm run setup:supabase · npm run db:schema'
-              : 'Скопируйте .env.example → .env'}
+            Если в письме ссылка на localhost — в Supabase укажите Site URL и Redirect URLs как выше.
+            После подтверждения откроется {getAuthCallbackUrl()}
           </Text>
         </Card>
       </ScrollView>

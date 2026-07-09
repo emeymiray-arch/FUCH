@@ -12,12 +12,10 @@ import { useAuthStore } from '@/store/authStore';
 export default function HomeScreen() {
   const { colors } = useTheme();
   const router = useRouter();
-  const { summary, transactions, accounts, isSyncing, initialize, syncInBackground, loadDemoData } =
-    useFinanceStore();
+  const { summary, transactions, accounts, isSyncing, syncInBackground } = useFinanceStore();
   const { user, checkSession } = useAuthStore();
 
   useEffect(() => {
-    initialize();
     const interval = setInterval(() => checkSession(), 30_000);
     return () => clearInterval(interval);
   }, []);
@@ -65,16 +63,16 @@ export default function HomeScreen() {
       {transactions.length === 0 && (
         <Card style={styles.demoCard}>
           <Text style={{ color: colors.text, fontWeight: '600', marginBottom: 6 }}>
-            Нет данных
+            Начните с первой операции
           </Text>
           <Text style={{ color: colors.textSecondary, fontSize: 14, marginBottom: 14, lineHeight: 20 }}>
-            Загрузите демо для просмотра приложения или добавьте операции вручную
+            Добавьте расход или доход вручную, подключите банк или настройте Битрикс24
           </Text>
           <Pressable
-            onPress={() => loadDemoData()}
+            onPress={() => router.push('/add-transaction')}
             style={[styles.demoBtn, { backgroundColor: colors.accent }]}
           >
-            <Text style={{ color: '#FFF', fontWeight: '600' }}>Загрузить демо-данные</Text>
+            <Text style={{ color: '#FFF', fontWeight: '600' }}>Добавить операцию</Text>
           </Pressable>
         </Card>
       )}

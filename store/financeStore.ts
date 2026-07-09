@@ -25,7 +25,6 @@ import { pullFinanceFromCloud, pushFinanceToCloud, isCloudSyncAvailable } from '
 import { syncAllBanks } from '@/services/bankSyncService';
 import { applyTransactionToAccounts, buildTransaction } from '@/services/transactionService';
 import { parseVoiceCommand } from '@/services/voiceCommandService';
-import { getDemoState } from '@/services/demoData';
 
 interface FinanceState {
   transactions: Transaction[];
@@ -40,7 +39,6 @@ interface FinanceState {
   sortOption: SortOption;
   initialize: () => Promise<void>;
   resetAllData: () => Promise<void>;
-  loadDemoData: () => Promise<void>;
   addTransaction: (input: CreateTransactionInput) => Transaction;
   addFromVoiceCommand: (text: string) => { ok: boolean; message: string; transaction?: Transaction };
   deleteTransaction: (id: string) => void;
@@ -175,25 +173,6 @@ export const useFinanceStore = create<FinanceState>((set, get) => {
       accounts: empty.accounts,
       categories: empty.categories,
       connectedBanks: [],
-      summary,
-    });
-  },
-
-  loadDemoData: async () => {
-    const demo = getDemoState();
-    await saveConnectedBanks(demo.connectedBanks);
-    await cacheData({
-      transactions: demo.transactions,
-      accounts: demo.accounts,
-      categories: demo.categories,
-    });
-    await markInitialized();
-    const summary = recalc(demo.transactions, demo.accounts);
-    set({
-      transactions: demo.transactions,
-      accounts: demo.accounts,
-      categories: demo.categories,
-      connectedBanks: demo.connectedBanks,
       summary,
     });
   },

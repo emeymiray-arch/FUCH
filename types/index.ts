@@ -26,7 +26,7 @@ export interface Attachment {
   createdAt: string;
 }
 
-export type TransactionSource = 'manual' | 'bank' | 'siri' | 'voice' | 'notification';
+export type TransactionSource = 'manual' | 'bank' | 'siri' | 'voice' | 'notification' | 'bitrix24';
 export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'bank';
 
 export interface Transaction {

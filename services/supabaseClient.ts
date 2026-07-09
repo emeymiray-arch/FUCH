@@ -1,37 +1,34 @@
-import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-
-const url =
-  process.env.EXPO_PUBLIC_SUPABASE_URL ??
-  process.env.NEXT_PUBLIC_SUPABASE_URL ??
-  '';
-const anonKey =
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
-  process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-  '';
+import { getAuthCallbackUrl, getSupabaseAnonKey, getSupabaseUrl, isSupabaseEnabled } from '@/lib/config';
 
 let client: SupabaseClient | null = null;
 
 export function isSupabaseConfigured(): boolean {
-  return url.length > 0 && anonKey.length > 0 && (url.includes('supabase.co') || url.includes('supabase.in'));
+  return isSupabaseEnabled();
 }
 
 export function getSupabase(): SupabaseClient {
   if (!isSupabaseConfigured()) {
-    throw new Error('Supabase не настроен. Добавьте EXPO_PUBLIC_SUPABASE_URL и EXPO_PUBLIC_SUPABASE_ANON_KEY в .env');
+    throw new Error('Supabase не настроен. Укажите EXPO_PUBLIC_SUPABASE_URL и EXPO_PUBLIC_SUPABASE_ANON_KEY');
   }
+
   if (!client) {
-    client = createClient(url, anonKey, {
+    client = createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
       auth: {
         storage: AsyncStorage,
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: Platform.OS === 'web',
+        detectSessionInUrl: true,
+        flowType: 'pkce',
+        redirectTo: getAuthCallbackUrl(),
       },
     });
   }
+
   return client;
+}
+
+export function resetSupabaseClient(): void {
+  client = null;
 }

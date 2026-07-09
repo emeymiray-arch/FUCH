@@ -1,52 +1,53 @@
 # FUCH (ФинОтчёт)
 
-Финансовое приложение (Expo + React Native).
+Финансовое приложение для руководителя. Expo + React Native + Supabase.
 
-**Репозиторий:** https://github.com/emeymiray-arch/FUCH
+**Репозиторий:** https://github.com/emeymiray-arch/FUCH  
+**Продакшен:** https://fuch-mu.vercel.app
 
-> Не путать с LIFE Dashboard — у FUCH свой Supabase-проект и свои ключи.
+## Архитектура
 
-## Запуск
+```
+app/                    — UI (Expo Router)
+lib/config.ts           — URL, Supabase, константы
+services/
+  auth/                 — AuthProvider (Supabase / Local)
+  integrations/bitrix24 — клиент и хранение webhook
+  cloudFinance.ts       — синхронизация финансов
+store/                  — Zustand (auth, finance)
+supabase/schema.sql     — profiles, user_finance, user_integrations
+```
+
+## Быстрый старт
 
 ```bash
+cp .env.example .env   # укажите ключи и APP_URL
 npm install
 npm run start -- --web
 ```
 
-Backend банков:
-```bash
-cd backend && npm install && npm start
-```
+## Supabase (обязательно для облака)
 
-## Supabase (опционально)
-
-1. Создайте **новый** проект на [supabase.com](https://supabase.com) для FUCH
-2. SQL Editor → выполните `supabase/schema.sql`
-3. `cp .env.example .env` → укажите URL и publishable key
-4. `npm run setup:supabase`
-5. Authentication → Email → отключите Confirm email
+1. SQL Editor → `supabase/schema.sql`
+2. **Authentication → URL Configuration:**
+   - Site URL: `https://fuch-mu.vercel.app`
+   - Redirect URLs: `https://fuch-mu.vercel.app/auth/callback`
+3. `.env`:
+   ```
+   EXPO_PUBLIC_APP_URL=https://fuch-mu.vercel.app
+   EXPO_PUBLIC_SUPABASE_URL=...
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=...
+   ```
 
 ## Vercel
 
-Если видите **404 NOT_FOUND** / `DEPLOYMENT_NOT_FOUND` — на Vercel **ещё нет успешного деплоя** (или открыт старый URL от LIFE Dashboard).
+Те же переменные + `npm run build:web` → `dist`
 
-### Первый деплой
+## Битрикс24
 
-1. Залейте код в GitHub: `git push origin main`
-2. [vercel.com/new](https://vercel.com/new) → Import **`emeymiray-arch/FUCH`**
-3. Framework: **Other** (настройки подтянутся из `vercel.json`)
-4. Deploy
+Настройки → Битрикс24 → входящий webhook с правами CRM.
 
-После Supabase (опционально) добавьте Environment Variables:
-- `EXPO_PUBLIC_SUPABASE_URL`
-- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+## Регистрация
 
-Build: `npm run build:web` · Output: `dist`
-
-После `git push` Vercel сам пересобирает сайт. Открытые вкладки обновятся автоматически (проверка `/version.json` раз в минуту).
-
-Финансовые данные между устройствами синхронизируются через Supabase (realtime + опрос каждые 45 сек).
-
-## Backend банков
-
-`backend/.env.example` → `backend/.env` (токены T-Bank / Сбер)
+- Email + 5-значный PIN
+- Если включено Confirm email — письмо ведёт на `/auth/callback`, не на localhost
