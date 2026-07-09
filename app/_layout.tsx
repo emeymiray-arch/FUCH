@@ -30,6 +30,8 @@ function useProtectedRoute(isAuthenticated: boolean, isLoading: boolean) {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const segments = useSegments();
+  const isAuthFlow = segments[0] === '(auth)';
   const { isAuthenticated, isLoading, initialize: initAuth, user } = useAuthStore();
   const initFinance = useFinanceStore((s) => s.initialize);
 
@@ -41,7 +43,7 @@ export default function RootLayout() {
   useProtectedRoute(isAuthenticated, isLoading);
   useDeepLinks(isAuthenticated && !isLoading);
   useNotificationClipboard(isAuthenticated && !isLoading);
-  useAppUpdate(true);
+  useAppUpdate(!isAuthFlow);
   useCloudFinanceSync(user?.id, isAuthenticated && !isLoading);
 
   if (isLoading) return null;

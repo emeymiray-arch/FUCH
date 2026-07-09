@@ -15,9 +15,19 @@ function versionUrl(): string {
   return `${base}/version.json?t=${Date.now()}`;
 }
 
+function canAutoReload(): boolean {
+  if (typeof document === 'undefined') return false;
+  const active = document.activeElement;
+  if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+    return false;
+  }
+  return true;
+}
+
 async function checkForUpdate(): Promise<void> {
   if (Platform.OS !== 'web' || BUILD_ID === 'dev' || isLocalHost()) return;
   if (typeof window === 'undefined') return;
+  if (!canAutoReload()) return;
 
   try {
     const res = await fetch(versionUrl(), { cache: 'no-store' });

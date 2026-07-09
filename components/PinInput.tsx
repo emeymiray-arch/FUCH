@@ -1,4 +1,4 @@
-import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Pressable, Platform } from 'react-native';
 import { useRef } from 'react';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -8,17 +8,56 @@ interface PinInputProps {
   value: string;
   onChange: (pin: string) => void;
   label?: string;
+  autoFocus?: boolean;
 }
 
-export function PinInput({ value, onChange, label }: PinInputProps) {
+export function PinInput({ value, onChange, label, autoFocus = false }: PinInputProps) {
   const { colors } = useTheme();
   const inputRef = useRef<TextInput>(null);
+  const isWeb = Platform.OS === 'web';
+
+  const handleChange = (text: string) => {
+    onChange(text.replace(/\D/g, '').slice(0, PIN_LENGTH));
+  };
+
+  if (isWeb) {
+    return (
+      <View style={styles.wrap}>
+        {label ? (
+          <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>
+        ) : null}
+        <TextInput
+          ref={inputRef}
+          value={value}
+          onChangeText={handleChange}
+          keyboardType="numeric"
+          inputMode="numeric"
+          maxLength={PIN_LENGTH}
+          autoFocus={autoFocus}
+          autoComplete="off"
+          autoCorrect={false}
+          spellCheck={false}
+          placeholder="00000"
+          placeholderTextColor={colors.textSecondary}
+          style={[
+            styles.webInput,
+            {
+              borderColor: colors.border,
+              color: colors.text,
+              backgroundColor: colors.surface,
+            },
+          ]}
+          accessibilityLabel={label ?? 'Пароль'}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.wrap}>
-      {label && (
+      {label ? (
         <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>
-      )}
+      ) : null}
       <Pressable style={styles.dots} onPress={() => inputRef.current?.focus()}>
         {Array.from({ length: PIN_LENGTH }).map((_, i) => (
           <View
@@ -36,12 +75,14 @@ export function PinInput({ value, onChange, label }: PinInputProps) {
       <TextInput
         ref={inputRef}
         value={value}
-        onChangeText={(t) => onChange(t.replace(/\D/g, '').slice(0, PIN_LENGTH))}
+        onChangeText={handleChange}
         keyboardType="number-pad"
-        secureTextEntry
         maxLength={PIN_LENGTH}
-        style={styles.hidden}
-        autoFocus
+        autoFocus={autoFocus}
+        secureTextEntry
+        caretHidden
+        style={styles.nativeInput}
+        accessibilityLabel={label ?? 'Пароль'}
       />
     </View>
   );
@@ -50,12 +91,15 @@ export function PinInput({ value, onChange, label }: PinInputProps) {
 export const PIN_LEN = PIN_LENGTH;
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center' },
-  label: { fontSize: 14, marginBottom: 16 },
+  wrap: { alignItems: 'stretch', width: '100%' },
+  label: { fontSize: 14, marginBottom: 12, textAlign: 'center' },
   dots: {
     flexDirection: 'row',
     gap: 14,
     marginBottom: 8,
+    justifyContent: 'center',
+    minHeight: 44,
+    alignItems: 'center',
   },
   dot: {
     width: 16,
@@ -63,10 +107,20 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 2,
   },
-  hidden: {
+  webInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 22,
+    textAlign: 'center',
+    fontVariant: ['tabular-nums'],
+  },
+  nativeInput: {
     position: 'absolute',
+    top: 28,
+    left: 0,
+    right: 0,
+    height: 44,
     opacity: 0,
-    height: 0,
-    width: 0,
   },
 });

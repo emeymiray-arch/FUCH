@@ -118,13 +118,13 @@ export default function RegisterScreen() {
             <View style={styles.form}>
               <Text style={{ color: colors.text, textAlign: 'center', marginBottom: 8 }}>{name}</Text>
               <Text style={{ color: colors.textSecondary, textAlign: 'center', marginBottom: 16 }}>{email}</Text>
-              <PinInput value={pin} onChange={setPin} label="Придумайте пароль (5 цифр)" />
+              <PinInput value={pin} onChange={setPin} label="Придумайте пароль (5 цифр)" autoFocus />
             </View>
           )}
 
           {step === 'confirm' && (
             <View style={styles.form}>
-              <PinInput value={confirmPin} onChange={setConfirmPin} label="Повторите пароль" />
+              <PinInput value={confirmPin} onChange={setConfirmPin} label="Повторите пароль" autoFocus />
             </View>
           )}
 

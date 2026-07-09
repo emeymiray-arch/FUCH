@@ -51,8 +51,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   loginWithEmailPin: async (email, pin) => {
     const user = await authService.loginWithEmailPin(email, pin);
-    await useFinanceStore.getState().initialize();
     set({ user, isAuthenticated: true });
+    useFinanceStore.getState().initialize().catch(() => {});
   },
 
   changePassword: async (currentPin, newPin) => {

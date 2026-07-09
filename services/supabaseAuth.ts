@@ -66,6 +66,18 @@ export async function cloudRegister(name: string, email: string, pin: string): P
   if (error) throw new Error(translateAuthError(error.message));
   if (!data.user) throw new Error('Не удалось создать аккаунт');
 
+  if (!data.session) {
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password: pinToPassword(pin),
+    });
+    if (signInError) {
+      throw new Error(
+        'Аккаунт создан, но вход не выполнен. В Supabase отключите Confirm email (Authentication → Email).'
+      );
+    }
+  }
+
   await supabase.from('profiles').upsert({
     id: data.user.id,
     name: name.trim(),
