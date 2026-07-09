@@ -43,6 +43,10 @@ cd backend && npm install && npm start
 
 Build: `npm run build:web` · Output: `dist`
 
+После `git push` Vercel сам пересобирает сайт. Открытые вкладки обновятся автоматически (проверка `/version.json` раз в минуту).
+
+Финансовые данные между устройствами синхронизируются через Supabase (realtime + опрос каждые 45 сек).
+
 ## Backend банков
 
 `backend/.env.example` → `backend/.env` (токены T-Bank / Сбер)

@@ -54,3 +54,6 @@ create trigger on_auth_user_created
 
 -- В Supabase Dashboard → Authentication → Providers → Email:
 -- отключите "Confirm email" для быстрого входа без письма
+
+-- Realtime: изменения финансов на других устройствах
+alter publication supabase_realtime add table public.user_finance;

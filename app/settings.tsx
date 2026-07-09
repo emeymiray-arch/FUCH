@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Switch, Alert, ScrollView } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
@@ -86,7 +86,11 @@ export default function SettingsScreen() {
           headerTintColor: colors.text,
         }}
       />
-      <View style={{ flex: 1, backgroundColor: colors.background, padding: 16 }}>
+      <ScrollView
+        style={{ flex: 1, backgroundColor: colors.background }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
         <Card style={styles.profile}>
           <View style={[styles.avatar, { backgroundColor: colors.accentLight }]}>
             <Text style={{ color: colors.accent, fontSize: 24, fontWeight: '700' }}>
@@ -251,7 +255,7 @@ export default function SettingsScreen() {
         <Pressable onPress={handleLogout} style={[styles.logout, { borderColor: colors.expense }]}>
           <Text style={{ color: colors.expense, fontWeight: '600' }}>Выйти</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </>
   );
 }

@@ -7,6 +7,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useFinanceStore } from '@/store/financeStore';
 import { useDeepLinks } from '@/hooks/useDeepLinks';
 import { useNotificationClipboard } from '@/hooks/useNotificationClipboard';
+import { useAppUpdate } from '@/hooks/useAppUpdate';
+import { useCloudFinanceSync } from '@/hooks/useCloudFinanceSync';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -28,7 +30,7 @@ function useProtectedRoute(isAuthenticated: boolean, isLoading: boolean) {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const { isAuthenticated, isLoading, initialize: initAuth } = useAuthStore();
+  const { isAuthenticated, isLoading, initialize: initAuth, user } = useAuthStore();
   const initFinance = useFinanceStore((s) => s.initialize);
 
   useEffect(() => {
@@ -39,6 +41,8 @@ export default function RootLayout() {
   useProtectedRoute(isAuthenticated, isLoading);
   useDeepLinks(isAuthenticated && !isLoading);
   useNotificationClipboard(isAuthenticated && !isLoading);
+  useAppUpdate(true);
+  useCloudFinanceSync(user?.id, isAuthenticated && !isLoading);
 
   if (isLoading) return null;
 

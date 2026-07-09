@@ -49,6 +49,7 @@ interface FinanceState {
   disconnectBank: (provider: BankProvider) => Promise<void>;
   syncBanks: () => Promise<{ added: number; errors: string[] }>;
   syncInBackground: () => Promise<void>;
+  refreshFromCloud: () => Promise<void>;
   setSearchQuery: (q: string) => void;
   setFilterType: (f: FilterType) => void;
   setSortOption: (s: SortOption) => void;
@@ -314,6 +315,40 @@ export const useFinanceStore = create<FinanceState>((set, get) => {
     const { connectedBanks } = get();
     if (connectedBanks.length > 0) {
       await get().syncBanks();
+    }
+  },
+
+  refreshFromCloud: async () => {
+    const userId = getFinanceUserId();
+    if (!isCloudSyncAvailable() || !userId) return;
+
+    try {
+      const cloud = await pullFinanceFromCloud(userId);
+      if (!cloud) return;
+
+      const localSync = await getLastSyncTime();
+      const localTs = localSync ? new Date(localSync).getTime() : 0;
+      const cloudTs = new Date(cloud.updatedAt).getTime();
+      if (cloudTs <= localTs) return;
+
+      const transactions = cloud.data.transactions.map(migrateTx);
+      await cacheData({
+        transactions,
+        accounts: cloud.data.accounts,
+        categories: cloud.data.categories,
+      });
+      await saveConnectedBanks(cloud.data.connectedBanks);
+
+      const summary = recalc(transactions, cloud.data.accounts);
+      set({
+        transactions,
+        accounts: cloud.data.accounts,
+        categories: cloud.data.categories,
+        connectedBanks: cloud.data.connectedBanks,
+        summary,
+      });
+    } catch {
+      // офлайн
     }
   },
 

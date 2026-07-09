@@ -33,11 +33,15 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=${vars.publishable}
   console.log('✓ Записан', envPath);
 }
 
+const existing = loadEnvFile();
+
 const publishable =
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
-  'sb_publishable_YVwFbaS2kgEusYrGxIdidg_PiGucOz9';
+  process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+  existing.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
+  existing.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+  '';
 
-const existing = loadEnvFile();
 let url =
   process.env.SUPABASE_PROJECT_URL ??
   process.env.EXPO_PUBLIC_SUPABASE_URL ??

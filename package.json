@@ -41,7 +41,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build:web": "expo export -p web",
+    "build:web": "node scripts/generate-version.mjs && expo export -p web && node scripts/generate-version.mjs --dist-only",
     "setup:supabase": "node scripts/setup-supabase.mjs",
     "db:schema": "node scripts/apply-schema.mjs"
   },
